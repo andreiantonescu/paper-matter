@@ -1,9 +1,10 @@
 {
   "name": "paper-matter",
-  "description": "Example project for MatterJS - PaperJS interaction",
+  "description": "Example project for PaperJS - MatterJS interaction",
   "version": "1.0.0",
   "dependencies": {
     "paper": null,
-    "matter-js": null
+    "matter-js": null,
+    "jquery": null
   }
 }
