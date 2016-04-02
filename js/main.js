@@ -28,8 +28,8 @@ engine = Engine.create({render: {visible: false}});
 var Objects = [];
 var bodyOptions = {
   frictionAir: 0.001,
-  friction: 0.4,
-  restitution: 0.7,
+  friction: 0.8,
+  restitution: 0.4,
   isStatic: false
 };
 
@@ -56,6 +56,29 @@ function addCircle(x, y, r, isStatic){
   return circle;
 }
 
+function boundsCenter(minX, minY, maxX, maxY){
+  return new Point((maxX + minX)/2, (maxY + minY)/2);
+}
+
+function addPath(vertices){
+  var object = Matter.Body.create({
+      position: Matter.Vertices.centre(vertices),
+      vertices: vertices,
+      isStatic: true,
+      fillColor: new Color(Math.random(), Math.random(), Math.random(), 1)
+  });
+  Matter.World.add(engine.world, object);
+
+  var path = new Path();
+  for(i = 0; i < vertices.length; i++){
+    path.add(new Point(vertices[i].x, vertices[i].y));
+  }
+  path.fillColor = new Color(Math.random(), Math.random(), Math.random(), 1);
+  path.closed = true;
+
+  return path;
+}
+
 
 // add random objects
 for (var i = 0; i < 5; i++){
@@ -74,12 +97,20 @@ function notInView(body, w, h){
   return false;
 }
 
+vertices= [{ x: 300, y: 300 }, { x: 270, y: 400 }, { x: 400, y: 400 }, {x:400, y:300}];
+Objects.push(addPath(vertices));
+
+vertices= [{ x: 600, y: 600 }, { x: 700, y: 700 }, { x: 800, y: 600 }];
+Objects.push(addPath(vertices));
+
+
 function onFrame(event) {
   for(it in engine.world.bodies){
     var body = engine.world.bodies[it];
     var render = Objects[it];
 
-    render.position = body.position;
+    bounds = body.bounds;
+    render.position = boundsCenter(bounds.min.x, bounds.min.y, bounds.max.x, bounds.max.y);
     rotation = -(body.anglePrev - body.angle) * 180 / Math.PI;
     render.rotate(rotation);
 
