@@ -19,17 +19,18 @@ var Engine = Matter.Engine,
     World = Matter.World,
     Bodies = Matter.Bodies,
     Composites = Matter.Composites,
-    Common = Matter.Common;
+    Common = Matter.Common,
+    Vertices = Matter.Vertices;
 
-// engine = Engine.create(document.body);
-engine = Engine.create({render: {visible: false}});
+engine = Engine.create(document.body);
+// engine = Engine.create({render: {visible: false}});
 
 // init objects
 var Objects = [];
 var bodyOptions = {
-  frictionAir: 0.001,
-  friction: 0.8,
-  restitution: 0.4,
+  // frictionAir: 0.001,
+  // friction: 0.8,
+  // restitution: 0.4,
   isStatic: false
 };
 
@@ -60,13 +61,15 @@ function boundsCenter(minX, minY, maxX, maxY){
   return new Point((maxX + minX)/2, (maxY + minY)/2);
 }
 
-function addPath(vertices){
-  var object = Matter.Body.create({
-      position: Matter.Vertices.centre(vertices),
-      vertices: vertices,
-      isStatic: true,
-      fillColor: new Color(Math.random(), Math.random(), Math.random(), 1)
-  });
+function addVertices(string){
+  var vertices = Vertices.fromPath(string);
+  object = Bodies.fromVertices(Matter.Vertices.centre(vertices).x, Matter.Vertices.centre(vertices).y, vertices, {
+                isStatic: true,
+                render: {
+                    fillStyle: 'red',
+                    strokeStyle: 'red'
+                }
+            }, true);
   Matter.World.add(engine.world, object);
 
   var path = new Path();
@@ -75,6 +78,7 @@ function addPath(vertices){
   }
   path.fillColor = new Color(Math.random(), Math.random(), Math.random(), 1);
   path.closed = true;
+  path.selected = true;
 
   return path;
 }
@@ -97,11 +101,11 @@ function notInView(body, w, h){
   return false;
 }
 
-vertices= [{ x: 300, y: 300 }, { x: 270, y: 400 }, { x: 400, y: 400 }, {x:400, y:300}];
-Objects.push(addPath(vertices));
+// vertices= [{ x: 300, y: 300 }, { x: 270, y: 400 }, { x: 400, y: 400 }, {x:400, y:300}];
+// Objects.push(addVertices(vertices));
 
-vertices= [{ x: 600, y: 600 }, { x: 700, y: 700 }, { x: 800, y: 600 }];
-Objects.push(addPath(vertices));
+// vertices= [{ x: 600, y: 600 }, { x: 700, y: 700 }, { x: 800, y: 600 }];
+// Objects.push(addPath(vertices));
 
 
 function onFrame(event) {
@@ -110,7 +114,10 @@ function onFrame(event) {
     var render = Objects[it];
 
     bounds = body.bounds;
+    // paperjs calculates position as the center of the bounding rectangle
+    // matterjs calculates position as the centroid of the object
     render.position = boundsCenter(bounds.min.x, bounds.min.y, bounds.max.x, bounds.max.y);
+    // render.position = body.position;
     rotation = -(body.anglePrev - body.angle) * 180 / Math.PI;
     render.rotate(rotation);
 
@@ -125,13 +132,49 @@ function onFrame(event) {
 // run the engine
 Engine.run(engine);
 
+var mousePath;
+
 function onMouseDrag(event) {
+  var step = event.delta / 2;
+  step.angle += 90;
+  step.length = 10;
+
+  var top = event.middlePoint + step;
+  var bottom = event.middlePoint - step;
+
+  mousePath.add(top);
+  mousePath.insert(0, bottom);
+
+  // random = Math.random() * 100;
+  // Objects.push(addRectangle(event.point.x, event.point.y, random, random, false));
+  // Objects.push(addCircle(event.point.x, event.point.y, random, false));
+}
+
+function onMouseDown(event) {
+  mousePath = new Path();
+  mousePath.fillColor = {
+    hue: Math.random() * 360,
+    saturation: 1,
+    brightness: 1
+  };
+
+  // mousePath.add(event.point);
+
   random = Math.random() * 100;
   Objects.push(addRectangle(event.point.x, event.point.y, random, random, false));
   Objects.push(addCircle(event.point.x, event.point.y, random, false));
 }
-function onMouseDown(event) {
-  random = Math.random() * 100;
-  Objects.push(addRectangle(event.point.x, event.point.y, random, random, false));
-  Objects.push(addCircle(event.point.x, event.point.y, random, false));
+
+function onMouseUp(event) {
+	mousePath.add(event.point);
+	mousePath.closed = true;
+	// mousePath.smooth();
+  // mousePath.simpl  ify();
+
+  var pathVertices = '';
+  for(i = 0; i < mousePath.segments.length; i++){
+    pathVertices += ' ' + mousePath.segments[i].point.x.toString();
+    pathVertices += ' ' + mousePath.segments[i].point.y.toString();
+  }
+  Objects.push(addVertices(pathVertices));
 }
