@@ -79,6 +79,7 @@ function addVertices(string){
   path.fillColor = new Color(Math.random(), Math.random(), Math.random(), 1);
   path.closed = true;
   path.selected = true;
+  path.visible = false;
 
   return path;
 }
@@ -87,12 +88,12 @@ function addVertices(string){
 // add random objects
 for (var i = 0; i < 5; i++){
   random = Math.random() * 100;
-  Objects.push(addRectangle(random + 300, random, random, random, false));
-  Objects.push(addCircle(random + 300, random, random, false));
+  // Objects.push(addRectangle(random + 300, random, random, random, false));
+  // Objects.push(addCircle(random + 300, random, random, false));
 }
 
 // add ground
-Objects.push(addRectangle(canvas.width/pxRatio/2, canvas.height/pxRatio -10, canvas.width/pxRatio, 20, true));
+// Objects.push(addRectangle(canvas.width/pxRatio/2, canvas.height/pxRatio -10, canvas.width/pxRatio, 20, true));
 
 function notInView(body, w, h){
   if(body.bounds.max.x < 0  || body.bounds.min.x > canvas.width/pxRatio){
@@ -101,13 +102,13 @@ function notInView(body, w, h){
   return false;
 }
 
-// vertices= [{ x: 300, y: 300 }, { x: 270, y: 400 }, { x: 400, y: 400 }, {x:400, y:300}];
+vertices= "600, 600, 700, 700, 800, 600";
 // Objects.push(addVertices(vertices));
 
 // vertices= [{ x: 600, y: 600 }, { x: 700, y: 700 }, { x: 800, y: 600 }];
 // Objects.push(addPath(vertices));
 
-
+var c = 0;
 function onFrame(event) {
   for(it in engine.world.bodies){
     var body = engine.world.bodies[it];
@@ -116,6 +117,16 @@ function onFrame(event) {
     bounds = body.bounds;
     // paperjs calculates position as the center of the bounding rectangle
     // matterjs calculates position as the centroid of the object
+    if(c==0){
+      console.log(render);
+      console.log("matterjs by bounds " + boundsCenter(bounds.min.x, bounds.min.y, bounds.max.x, bounds.max.y));
+      console.log("bounds: " + Math.floor(bounds.min.x) + " " + Math.floor(bounds.min.y) + " " + Math.floor(bounds.max.x) + " " + Math.floor(bounds.max.y));
+      console.log("matterjs by center " + Math.floor(body.position.x) + " " + Math.floor(body.position.y));
+      console.log("paperjs" + render.position);
+      c = 1;
+
+      console.log(boundsCenter(bounds.min.x, bounds.min.y, bounds.max.x, bounds.max.y) - body.position);
+    }
     render.position = boundsCenter(bounds.min.x, bounds.min.y, bounds.max.x, bounds.max.y);
     // render.position = body.position;
     rotation = -(body.anglePrev - body.angle) * 180 / Math.PI;
@@ -137,7 +148,7 @@ var mousePath;
 function onMouseDrag(event) {
   var step = event.delta / 2;
   step.angle += 90;
-  step.length = 10;
+  step.length = 4;
 
   var top = event.middlePoint + step;
   var bottom = event.middlePoint - step;
@@ -161,15 +172,15 @@ function onMouseDown(event) {
   // mousePath.add(event.point);
 
   random = Math.random() * 100;
-  Objects.push(addRectangle(event.point.x, event.point.y, random, random, false));
-  Objects.push(addCircle(event.point.x, event.point.y, random, false));
+  // Objects.push(addRectangle(event.point.x, event.point.y, random, random, false));
+  // Objects.push(addCircle(event.point.x, event.point.y, random, false));
 }
 
 function onMouseUp(event) {
 	mousePath.add(event.point);
 	mousePath.closed = true;
 	// mousePath.smooth();
-  // mousePath.simpl  ify();
+  // mousePath.simplify();
 
   var pathVertices = '';
   for(i = 0; i < mousePath.segments.length; i++){
