@@ -22,8 +22,8 @@ var Engine = Matter.Engine,
     Common = Matter.Common,
     Vertices = Matter.Vertices;
 
-engine = Engine.create(document.body);
-// engine = Engine.create({render: {visible: false}});
+// engine = Engine.create(document.body);
+engine = Engine.create({render: {visible: false}});
 
 // init objects
 var Objects = [];
@@ -61,7 +61,7 @@ function boundsCenter(minX, minY, maxX, maxY){
   return new Point((maxX + minX)/2, (maxY + minY)/2);
 }
 
-function addVertices(string){
+function addMatterVertices(string, path){
   var vertices = Vertices.fromPath(string);
   object = Bodies.fromVertices(Matter.Vertices.centre(vertices).x, Matter.Vertices.centre(vertices).y, vertices, {
                 isStatic: true,
@@ -72,14 +72,18 @@ function addVertices(string){
             }, true);
   Matter.World.add(engine.world, object);
 
-  var path = new Path();
-  for(i = 0; i < vertices.length; i++){
-    path.add(new Point(vertices[i].x, vertices[i].y));
-  }
-  path.fillColor = new Color(Math.random(), Math.random(), Math.random(), 1);
-  path.closed = true;
-  path.selected = true;
-  path.visible = false;
+  // var path = new Path();
+  // for(i = 0; i < vertices.length; i++){
+  //   path.add(new Point(vertices[i].x, vertices[i].y));
+  // }
+  // path.fillColor = new Color(Math.random(), Math.random(), Math.random(), 1);
+  // path.closed = true;
+  // path.selected = true;
+  // path.visible = false;
+
+  difference = path.position - boundsCenter(object.bounds.min.x, object.bounds.min.y, object.bounds.max.x, object.bounds.max.y);
+  // align matterjs object with paperjs drawn shape
+  Matter.Body.translate(object, difference);
 
   return path;
 }
@@ -93,7 +97,7 @@ for (var i = 0; i < 5; i++){
 }
 
 // add ground
-// Objects.push(addRectangle(canvas.width/pxRatio/2, canvas.height/pxRatio -10, canvas.width/pxRatio, 20, true));
+Objects.push(addRectangle(canvas.width/pxRatio/2, canvas.height/pxRatio -10, canvas.width/pxRatio, 20, true));
 
 function notInView(body, w, h){
   if(body.bounds.max.x < 0  || body.bounds.min.x > canvas.width/pxRatio){
@@ -102,7 +106,7 @@ function notInView(body, w, h){
   return false;
 }
 
-vertices= "600, 600, 700, 700, 800, 600";
+// vertices= "600, 600, 700, 700, 800, 600";
 // Objects.push(addVertices(vertices));
 
 // vertices= [{ x: 600, y: 600 }, { x: 700, y: 700 }, { x: 800, y: 600 }];
@@ -114,21 +118,10 @@ function onFrame(event) {
     var body = engine.world.bodies[it];
     var render = Objects[it];
 
-    bounds = body.bounds;
     // paperjs calculates position as the center of the bounding rectangle
     // matterjs calculates position as the centroid of the object
-    if(c==0){
-      console.log(render);
-      console.log("matterjs by bounds " + boundsCenter(bounds.min.x, bounds.min.y, bounds.max.x, bounds.max.y));
-      console.log("bounds: " + Math.floor(bounds.min.x) + " " + Math.floor(bounds.min.y) + " " + Math.floor(bounds.max.x) + " " + Math.floor(bounds.max.y));
-      console.log("matterjs by center " + Math.floor(body.position.x) + " " + Math.floor(body.position.y));
-      console.log("paperjs" + render.position);
-      c = 1;
+    render.position = boundsCenter(body.bounds.min.x, body.bounds.min.y, body.bounds.max.x, body.bounds.max.y);
 
-      console.log(boundsCenter(bounds.min.x, bounds.min.y, bounds.max.x, bounds.max.y) - body.position);
-    }
-    render.position = boundsCenter(bounds.min.x, bounds.min.y, bounds.max.x, bounds.max.y);
-    // render.position = body.position;
     rotation = -(body.anglePrev - body.angle) * 180 / Math.PI;
     render.rotate(rotation);
 
@@ -172,8 +165,8 @@ function onMouseDown(event) {
   // mousePath.add(event.point);
 
   random = Math.random() * 100;
-  // Objects.push(addRectangle(event.point.x, event.point.y, random, random, false));
-  // Objects.push(addCircle(event.point.x, event.point.y, random, false));
+  Objects.push(addRectangle(event.point.x, event.point.y, random, random, false));
+  Objects.push(addCircle(event.point.x, event.point.y, random, false));
 }
 
 function onMouseUp(event) {
@@ -187,5 +180,6 @@ function onMouseUp(event) {
     pathVertices += ' ' + mousePath.segments[i].point.x.toString();
     pathVertices += ' ' + mousePath.segments[i].point.y.toString();
   }
-  Objects.push(addVertices(pathVertices));
+  addMatterVertices(pathVertices, mousePath);
+  Objects.push(mousePath);
 }
