@@ -13,6 +13,7 @@ function resizeAndRedrawCanvas() {
 }
 
 var pxRatio = window.devicePixelRatio;
+var particleSizeCt = 50;
 
 // Matter.js module aliases
 var Engine = Matter.Engine,
@@ -23,16 +24,26 @@ var Engine = Matter.Engine,
     Vertices = Matter.Vertices;
 
 // engine = Engine.create(document.body);
-engine = Engine.create({render: {visible: false}});
+engine = Matter.Engine.create({render: {visible: false}});
 
 // init objects
 var Objects = [];
 var bodyOptions = {
-  // frictionAir: 0.001,
-  // friction: 0.8,
-  // restitution: 0.4,
+  frictionAir: 0.001,
+  friction: 0.4,
+  restitution: 0.5,
   isStatic: false
 };
+
+var drawing = false;
+$(document).on('click', '.toggle-button', function() {
+    $(this).toggleClass('toggle-button-selected');
+    drawing = !drawing;
+    $('.description').text('create');
+    if(drawing){
+      $('.description').text('draw');
+    }
+});
 
 // create rectangle
 function addRectangle(x, y, w, h, isStatic){
@@ -46,6 +57,7 @@ function addRectangle(x, y, w, h, isStatic){
     fillColor: new Color(Math.random(), Math.random(), Math.random(), 1)
   });
 }
+
 // create circle
 function addCircle(x, y, r, isStatic){
   // matterjs
@@ -56,6 +68,7 @@ function addCircle(x, y, r, isStatic){
   circle.fillColor = new Color(Math.random(), Math.random(), Math.random(), 1)
   return circle;
 }
+
 
 function boundsCenter(minX, minY, maxX, maxY){
   return new Point((maxX + minX)/2, (maxY + minY)/2);
@@ -71,29 +84,16 @@ function addMatterVertices(string, path){
                 }
             }, true);
   Matter.World.add(engine.world, object);
-
-  // var path = new Path();
-  // for(i = 0; i < vertices.length; i++){
-  //   path.add(new Point(vertices[i].x, vertices[i].y));
-  // }
-  // path.fillColor = new Color(Math.random(), Math.random(), Math.random(), 1);
-  // path.closed = true;
-  // path.selected = true;
-  // path.visible = false;
-
   difference = path.position - boundsCenter(object.bounds.min.x, object.bounds.min.y, object.bounds.max.x, object.bounds.max.y);
   // align matterjs object with paperjs drawn shape
   Matter.Body.translate(object, difference);
-
-  return path;
 }
-
 
 // add random objects
 for (var i = 0; i < 5; i++){
-  random = Math.random() * 100;
-  // Objects.push(addRectangle(random + 300, random, random, random, false));
-  // Objects.push(addCircle(random + 300, random, random, false));
+  random = Math.random() * particleSizeCt;
+  Objects.push(addRectangle(random + 300, random, random, random, false));
+  Objects.push(addCircle(random + 300, random, random, false));
 }
 
 // add ground
@@ -139,47 +139,51 @@ Engine.run(engine);
 var mousePath;
 
 function onMouseDrag(event) {
-  var step = event.delta / 2;
-  step.angle += 90;
-  step.length = 4;
+  if (!drawing){
+    random = Math.random() * particleSizeCt;
+    Objects.push(addRectangle(event.point.x, event.point.y, random, random, false));
+    Objects.push(addCircle(event.point.x, event.point.y, random, false));
+  }
+  else if(drawing){
+    var step = event.delta / 2;
+    step.angle += 90;
+    step.length = 4;
 
-  var top = event.middlePoint + step;
-  var bottom = event.middlePoint - step;
+    var top = event.middlePoint + step;
+    var bottom = event.middlePoint - step;
 
-  mousePath.add(top);
-  mousePath.insert(0, bottom);
-
-  // random = Math.random() * 100;
-  // Objects.push(addRectangle(event.point.x, event.point.y, random, random, false));
-  // Objects.push(addCircle(event.point.x, event.point.y, random, false));
+    mousePath.add(top);
+    mousePath.insert(0, bottom);
+  }
 }
 
 function onMouseDown(event) {
-  mousePath = new Path();
-  mousePath.fillColor = {
-    hue: Math.random() * 360,
-    saturation: 1,
-    brightness: 1
-  };
-
-  // mousePath.add(event.point);
-
-  random = Math.random() * 100;
-  Objects.push(addRectangle(event.point.x, event.point.y, random, random, false));
-  Objects.push(addCircle(event.point.x, event.point.y, random, false));
+  if(!drawing){
+    random = Math.random() * particleSizeCt;
+    Objects.push(addRectangle(event.point.x, event.point.y, random, random, false));
+    Objects.push(addCircle(event.point.x, event.point.y, random, false));
+  }
+  else if(drawing){
+    mousePath = new Path();
+    mousePath.fillColor = {
+      hue: Math.random() * 360,
+      saturation: 1,
+      brightness: 1
+    };
+  }
 }
 
 function onMouseUp(event) {
-	mousePath.add(event.point);
-	mousePath.closed = true;
-	// mousePath.smooth();
-  // mousePath.simplify();
+  if(drawing){
+    mousePath.add(event.point);
+    mousePath.closed = true;
 
-  var pathVertices = '';
-  for(i = 0; i < mousePath.segments.length; i++){
-    pathVertices += ' ' + mousePath.segments[i].point.x.toString();
-    pathVertices += ' ' + mousePath.segments[i].point.y.toString();
+    var pathVertices = '';
+    for(i = 0; i < mousePath.segments.length; i++){
+      pathVertices += ' ' + mousePath.segments[i].point.x.toString();
+      pathVertices += ' ' + mousePath.segments[i].point.y.toString();
+    }
+    addMatterVertices(pathVertices, mousePath);
+    Objects.push(mousePath);
   }
-  addMatterVertices(pathVertices, mousePath);
-  Objects.push(mousePath);
 }
